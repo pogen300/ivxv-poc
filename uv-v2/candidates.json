@@ -1,0 +1,10 @@
+{
+  "election" : "uv-v2",
+  "choices" : {
+    "10.1" : {
+      "party" : {
+        "1001" : "Candidate"
+      }
+    }
+  }
+}

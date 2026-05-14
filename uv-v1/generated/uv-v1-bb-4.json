@@ -1,0 +1,10 @@
+{
+  "election": "UVV1",
+  "districts": {
+    "99": {
+      "999": {
+        "TESTQUESTION": ["dXYtdjEtZGVtby1jaXBoZXJ0ZXh0"]
+      }
+    }
+  }
+}

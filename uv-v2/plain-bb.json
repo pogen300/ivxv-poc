@@ -1,0 +1,11 @@
+{
+  "election" : "uv-v2",
+  "byparish" : {
+    "10.1" : {
+      "001" : [ "invalid" ]
+    }
+  },
+  "bydistrict" : {
+    "10.1" : [ "invalid" ]
+  }
+}

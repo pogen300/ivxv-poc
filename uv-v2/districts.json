@@ -1,0 +1,19 @@
+{
+  "districts" : {
+    "10.1" : {
+      "name" : "District",
+      "parish" : [ "001" ]
+    }
+  },
+  "regions" : {
+    "001" : {
+      "county" : "County",
+      "state" : "State",
+      "parish" : "Parish"
+    }
+  },
+  "counties" : {
+    "County" : [ "001" ]
+  },
+  "election" : "uv-v2"
+}
