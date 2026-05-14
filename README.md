@@ -122,16 +122,16 @@ Expected result:
 - `repos/ivxv/auditor/src/test/java/ee/ivxv/audit/tools/UVV2AuditDecryptToolInvalidDropTest.java` runs `DecryptTool` on the generated election result, where a valid ballot is moved to the discarded list and removed from the valid outputs
 - `repos/ivxv/auditor/src/test/java/ee/ivxv/common/cli/TestContextFactory.java` lets the auditor tests use raw JSON `districts` and `candidates` fixtures instead of BDOCs.
 
-## P-V2
+## P-V1
 Run CS test:
 ```sh
 cd "$IVXV/common/collector"
-go test ./crypto/elgamal -run TestPV2CS -count=1
+go test ./crypto/elgamal -run TestPV1CS -count=1
 ```
 
 Run in IDE:
-- VVD `repos/ivotingverification/app/src/test/java/ee/vvk/ivotingverification/common/crypto/elgamal/PV2VVDWeakGeneratorTest.java`
-- PA `repos/ivxv/common/java/src/test/java/ee/ivxv/common/crypto/PV2PAWeakGeneratorTest.java`
+- VVD `repos/ivotingverification/app/src/test/java/ee/vvk/ivotingverification/common/crypto/elgamal/PV1VVDWeakGeneratorTest.java`
+- PA `repos/ivxv/common/java/src/test/java/ee/ivxv/common/crypto/PV1PAWeakGeneratorTest.java`
 
 Expected result:
 - CS accepts malformed serialized generators and accepts the `g=1,y=1` ciphertext
@@ -140,13 +140,13 @@ Expected result:
 
 ### PoC Implementation
 #### Data
-- `p-v2/weak-g1-y1-public.pem`: ModP public key with the original safe-prime modulus but weak parameters `g=1,y=1`
-- `p-v2/weak-nonqr-y1-public.pem`: ModP public key with the same modulus but a non-QR generator `g=p-1`
-- `p-v2/weak-g1-y1-ciphertext.b64`: ciphertext with `A=1` and `B` equal to a valid encoded plaintext element
-- `p-v2/weak-g1-y1-randomness.b64`: matching randomness for VVD decryption
-- `p-v2/weak-g1-y1-plaintext.txt`: matching plaintext for VVD decryption
+- `p-v1/weak-g1-y1-public.pem`: ModP public key with the original safe-prime modulus but weak parameters `g=1,y=1`
+- `p-v1/weak-nonqr-y1-public.pem`: ModP public key with the same modulus but a non-QR generator `g=p-1`
+- `p-v1/weak-g1-y1-ciphertext.b64`: ciphertext with `A=1` and `B` equal to a valid encoded plaintext element
+- `p-v1/weak-g1-y1-randomness.b64`: matching randomness for VVD decryption
+- `p-v1/weak-g1-y1-plaintext.txt`: matching plaintext for VVD decryption
 
 #### Tests
-- `TestPV2CSAcceptsWeakGeneratorParameters`, `TestPV2CSAcceptsWeakGeneratorCiphertext`: use the real CS's X.509 unmarshaller and ciphertext validator
-- `PV2PAWeakGeneratorTest`: uses the real PA ElGamal pk parser and `CorrectnessUtil.isValidCiphertext()`
-- `PV2VVDWeakGeneratorTest`: uses the real VVD's `parseX509PEMPublicKey()` and `decryptWithRandomness()`
+- `TestPV1CSAcceptsWeakGeneratorParameters`, `TestPV1CSAcceptsWeakGeneratorCiphertext`: use the real CS's X.509 unmarshaller and ciphertext validator
+- `PV1PAWeakGeneratorTest`: uses the real PA ElGamal pk parser and `CorrectnessUtil.isValidCiphertext()`
+- `PV1VVDWeakGeneratorTest`: uses the real VVD's `parseX509PEMPublicKey()` and `decryptWithRandomness()`
