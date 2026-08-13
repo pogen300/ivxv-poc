@@ -1,53 +1,87 @@
 # IVXV PoC
+This repo contains proof-of-concept (PoC) artefacts for selected IVXV findings. 
+This README describes the repository structure and setup process, then provides reproduction instructions and implementation details for each PoC.
+
 ## Structure
 - `env.sh`: environment path variables
 - `setup-cs.sh`: prepares the local ivxv collector/core Go code for the CS PoCs by rebuilding the generator and regenerating the required gen_types.go
-- `iv/uv-*`: subfolder for the corresponding vulnerability, containing data used by test cases in the private mirror of ivxv and ivotingverification repos.
+- `iv-v*/` and `uv-v*/`: test fixtures for the corresponding vulnerability
+- `code/`: test source files grouped by vulnerability
 
 ## Setup
+### 0. Prerequisites
+Install Go 1.23; In terminal, set `export TOOLBIN=<path to go 1.23 bin>`
+
+### 1. Environment setup
 Start in the PoC root:
 ```sh
 source ./env.sh
 ```
-
-Clone private mirror repos under `repos/`:
-```sh
-mkdir repos
-cd repos
-git clone git@github.com:pogen300/ivxv.git
-git clone git@github.com:pogen300/ivotingverification.git
-```
-
 Keep using the same shell for all CLI PoC tests
 
-### CS setup
+### 2. Clone IVXV repos
+Clone IVXV repos under `repos/`:
+```sh
+mkdir -p repos
+git clone https://github.com/valimised/ivxv.git repos/ivxv
+git -C repos/ivxv checkout --detach 2785872f84dffb56bbecc41b096a7ee0f2876e64
+
+git clone https://github.com/valimised/ivotingverification.git repos/ivotingverification
+git -C repos/ivotingverification checkout --detach 53ea2d4e28863c1be722214ee0469a6d94c7f315
+```
+
+### 3. Move test cases to the cloned repos
+Run:
+```sh
+mkdir -p repos/ivxv/common/java/src/test/java/ee/ivxv/common/service/bbox/impl
+mkdir -p repos/ivotingverification/app/src/test/java/ee/vvk/ivotingverification/util/
+mkdir -p repos/ivxv/common/java/src/test/java/ee/ivxv/common/crypto/
+mkdir -p repos/ivxv/auditor/src/test/java/ee/ivxv/audit/tools/
+mkdir -p repos/ivxv/auditor/src/test/java/ee/ivxv/common/cli
+
+cp code/iv-v2/IVV2PATspDigestMismatchTest.java repos/ivxv/common/java/src/test/java/ee/ivxv/common/service/bbox/impl/IVV2PATspDigestMismatchTest.java
+cp code/iv-v2/IVV2VVDTspDigestMismatchTest.java repos/ivotingverification/app/src/test/java/ee/vvk/ivotingverification/util/IVV2VVDTspDigestMismatchTest.java
+
+cp code/iv-v5/iv_v5_cs_negative_ciphertext_test.go repos/ivxv/common/collector/crypto/elgamal/iv_v5_cs_negative_ciphertext_test.go
+cp code/iv-v5/IVV5PANegativeCiphertextTest.java repos/ivxv/common/java/src/test/java/ee/ivxv/common/crypto/IVV5PANegativeCiphertextTest.java
+cp code/iv-v5/IVV5VVDNegativeCiphertextTest.java repos/ivotingverification/app/src/test/java/ee/vvk/ivotingverification/common/crypto/elgamal/IVV5VVDNegativeCiphertextTest.java
+
+cp code/uv-v1/UVV1AuditIntegrityToolDistrictReassignmentTest.java repos/ivxv/auditor/src/test/java/ee/ivxv/audit/tools/UVV1AuditIntegrityToolDistrictReassignmentTest.java
+
+cp code/uv-v2/UVV2AuditDecryptToolInvalidDropTest.java repos/ivxv/auditor/src/test/java/ee/ivxv/audit/tools/UVV2AuditDecryptToolInvalidDropTest.java
+cp code/uv-v2/TestContextFactory.java repos/ivxv/auditor/src/test/java/ee/ivxv/common/cli/TestContextFactory.java
+
+cp code/p-v1/p_v1_cs_weak_generator_test.go repos/ivxv/common/collector/crypto/elgamal/p_v1_cs_weak_generator_test.go
+cp code/p-v1/PV1PAWeakGeneratorTest.java repos/ivxv/common/java/src/test/java/ee/ivxv/common/crypto/PV1PAWeakGeneratorTest.java
+cp code/p-v1/PV1VVDWeakGeneratorTest.java repos/ivotingverification/app/src/test/java/ee/vvk/ivotingverification/common/crypto/elgamal/PV1VVDWeakGeneratorTest.java
+```
+
+### 4. CS setup
+The CS tests also require the local IVXV core checkout:
+```sh
+cd $IVXV/common/collector
+go mod edit -replace=tivi.io/core=../../core
+cd $IVXV_POCROOT
+```
+
 Set up CS-side Go workspace for CS PoCs
 ```sh
 ./setup-cs.sh
 ```
 
-### Intellij projects setup
-- Add `IVXV_POCROOT=/Users/www-data/Desktop/ivxv-project/ivxv-poc` to the run config of any test file
-
-#### PA setup
-Open `ivxv/processor` in Intellij
-
-#### VVD setup
-Open `ivotingverification` in Intellij
-
-#### Audit setup
-Open `ivxv/auditor` in Intellij
-
 
 ## IV-V2
 
-Run in IDE:
-- VVD: `repos/ivotingverification/app/src/test/java/ee/vvk/ivotingverification/util/IVV2VVDTspDigestMismatchTest.java`
-- PA: `repos/ivxv/common/java/src/test/java/ee/ivxv/common/service/bbox/impl/IVV2PATspDigestMismatchTest.java`
+### Run PoC
+VVD:
+```sh
+JAVA_HOME="$POC_ANDROID_JAVA_HOME" IVXV_POCROOT="$IVXV_POCROOT" $VVD/gradlew -p $VVD --no-daemon :app:testConfigDemoDebugUnitTest --tests 'ee.vvk.ivotingverification.util.IVV2VVDTspDigestMismatchTest' --rerun-tasks --info 2>&1 | grep -F 'PASS:'
+```
 
-Expected result:
-- VVD accepts the same forged response
-- PA rejects the forged response with `REG_NONCE_ALG_MISMATCH`
+PA:
+```sh
+JAVA_HOME="$POC_JAVA_HOME" IVXV_POCROOT="$IVXV_POCROOT" $VVD/gradlew -p repos/ivxv/common/java test --tests 'ee.ivxv.common.service.bbox.impl.IVV2PATspDigestMismatchTest' --rerun-tasks --info 2>&1 | grep -F 'PASS:'
+```
 
 ### PoC Implementation
 #### Data
@@ -69,21 +103,26 @@ openssl asn1parse -inform DER -in iv-v2/request.tspreq -strparse 92
 
 
 ## IV-V5
+### Run PoC
 Run CS test:
 ```sh
-cd "$IVXV/common/collector"
-go test ./crypto/elgamal -run TestIVV5CSAcceptsNegativeASN1Ciphertext -count=1
+go -C $IVXV/common/collector test ./crypto/elgamal -run TestIVV5CSAcceptsNegativeASN1Ciphertext -count=1
 ```
 
-Run in IDE:
-- VVD `repos/ivotingverification/app/src/test/java/ee/vvk/ivotingverification/common/crypto/elgamal/IVV5VVDNegativeCiphertextTest.java`
-- PA `repos/ivxv/common/java/src/test/java/ee/ivxv/common/crypto/IVV5PANegativeCiphertextTest.java`
+VVD:
+```sh
+JAVA_HOME="$POC_ANDROID_JAVA_HOME" IVXV_POCROOT="$IVXV_POCROOT" $VVD/gradlew -p $VVD --no-daemon :app:testConfigDemoDebugUnitTest --tests 'ee.vvk.ivotingverification.common.crypto.elgamal.IVV5VVDNegativeCiphertextTest' --rerun-tasks --info 2>&1 | grep -F 'PASS:'
+```
 
+PA:
+```sh
+JAVA_HOME="$POC_JAVA_HOME" IVXV_POCROOT="$IVXV_POCROOT" $VVD/gradlew -p repos/ivxv/common/java test --tests 'ee.ivxv.common.crypto.IVV5PANegativeCiphertextTest' --rerun-tasks --info 2>&1 | grep -F 'PASS:'
+```
 
 Expected result:
 - CS accepts the malformed ciphertext
 - VVD accepts the malformed ciphertext
-- PA reports `INVALID_RANGE`
+- PA reports `INVALID_RANGE` and rejects
 
 ### PoC Implementation
 `iv-v5/negative_modp3072_ciphertext.b64` contains a strategically created vote ciphertext `(A,B)` with:
@@ -97,11 +136,12 @@ Expected result:
 
 
 ## UV-V1
-Run in IDE:
--  Audit: `repos/ivxv/auditor/src/test/java/ee/ivxv/audit/tools/UVV1AuditIntegrityToolDistrictReassignmentTest.java`
+Audit:
+```sh
+JAVA_HOME="$POC_JAVA_HOME" IVXV_POCROOT="$IVXV_POCROOT" $VVD/gradlew -p repos/ivxv/auditor test --tests 'ee.ivxv.audit.tools.UVV1AuditIntegrityToolDistrictReassignmentTest' --rerun-tasks --info 2>&1 | grep -F 'PASS:'
+```
 
-Expected result:
-- all `IntegrityTool` checks pass
+Expected result: Pass
 
 ### PoC Implementation
 #### Data
@@ -111,8 +151,10 @@ Expected result:
 - `UVV1AuditIntegrityToolDistrictReassignmentTest`: the test runs IntegrityTool, provides a pre-mix ballotbox, a district-reassigned anonymous ballotbox, and processor stage logs to show the check passes without detecting the district/station mismatch.
 
 ## UV-V2
-Run in IDE:
--  Audit: `repos/ivxv/auditor/src/test/java/ee/ivxv/audit/tools/UVV2AuditDecryptToolInvalidDropTest.java`
+Audit:
+```sh
+JAVA_HOME="$POC_JAVA_HOME" IVXV_POCROOT="$IVXV_POCROOT" $VVD/gradlew -p repos/ivxv/auditor test --tests 'ee.ivxv.audit.tools.UVV2AuditDecryptToolInvalidDropTest' --rerun-tasks --info 2>&1 | grep -F 'PASS:'
+```
 
 Expected result:
 - the `without invalidity proofs` case passes
@@ -125,13 +167,18 @@ Expected result:
 ## P-V1
 Run CS test:
 ```sh
-cd "$IVXV/common/collector"
-go test ./crypto/elgamal -run TestPV1CS -count=1
+go -C $IVXV/common/collector test ./crypto/elgamal -run TestPV1CS -count=1
 ```
 
-Run in IDE:
-- VVD `repos/ivotingverification/app/src/test/java/ee/vvk/ivotingverification/common/crypto/elgamal/PV1VVDWeakGeneratorTest.java`
-- PA `repos/ivxv/common/java/src/test/java/ee/ivxv/common/crypto/PV1PAWeakGeneratorTest.java`
+VVD:
+```sh
+JAVA_HOME="$POC_ANDROID_JAVA_HOME" IVXV_POCROOT="$IVXV_POCROOT" $VVD/gradlew -p $VVD --no-daemon :app:testConfigDemoDebugUnitTest --tests 'ee.vvk.ivotingverification.common.crypto.elgamal.PV1VVDWeakGeneratorTest' --rerun-tasks --info 2>&1 | grep -F 'PASS:'
+```
+
+PA:
+```sh
+JAVA_HOME="$POC_JAVA_HOME" IVXV_POCROOT="$IVXV_POCROOT" $VVD/gradlew -p repos/ivxv/common/java test --tests 'ee.ivxv.common.crypto.PV1PAWeakGeneratorTest' --rerun-tasks --info 2>&1 | grep -F 'PASS:'
+```
 
 Expected result:
 - CS accepts malformed serialized generators and accepts the `g=1,y=1` ciphertext
